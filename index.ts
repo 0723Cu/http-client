@@ -28,11 +28,21 @@ export enum HttpCodes {
     RequestTimeout = 408,
     Conflict = 409,
     Gone = 410,
+    TooManyRequests = 429,
     InternalServerError = 500,
     NotImplemented = 501,
     BadGateway = 502,
     ServiceUnavailable = 503,
     GatewayTimeout = 504,
+}
+
+export enum Headers  {
+    Accept = "accept",
+    ContentType = "content-type"
+}
+
+export enum MediaTypes {
+    ApplicationJson = "application/json"
 }
 
 /**
@@ -69,12 +79,6 @@ export class HttpClientResponse implements ifm.IHttpClientResponse {
             });
         });
     }
-}
-
-export interface ITypedResponse<T> {
-    statusCode: number,
-    result: T | null,
-    headers: Object
 }
 
 export function isHttps(requestUrl: string) {
@@ -172,25 +176,32 @@ export class HttpClient {
      * Gets a typed object from an endpoint
      * Be aware that not found returns a null.  Other errors (4xx, 5xx) reject the promise
      */
-    public async getJson<T>(requestUrl: string, additionalHeaders?: ifm.IHeaders): Promise<ITypedResponse<T>> {
+    public async getJson<T>(requestUrl: string, additionalHeaders: ifm.IHeaders = {}): Promise<ifm.ITypedResponse<T>> {
+        additionalHeaders[Headers.Accept] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.Accept, MediaTypes.ApplicationJson)
         let res: ifm.IHttpClientResponse = await this.get(requestUrl, additionalHeaders);
         return this._processResponse<T>(res, this.requestOptions);
     }
     
-    public async postJson<T>(requestUrl: string, obj:T, additionalHeaders?: ifm.IHeaders): Promise<ITypedResponse<T>> {
+    public async postJson<T>(requestUrl: string, obj: any, additionalHeaders: ifm.IHeaders = {}): Promise<ifm.ITypedResponse<T>> {
         let data: string = JSON.stringify(obj, null, 2);
+        additionalHeaders[Headers.Accept] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.Accept, MediaTypes.ApplicationJson)
+        additionalHeaders[Headers.ContentType] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.ContentType, MediaTypes.ApplicationJson);
         let res: ifm.IHttpClientResponse = await this.post(requestUrl, data, additionalHeaders);
         return this._processResponse<T>(res, this.requestOptions);
     }
 
-    public async putJson<T>(requestUrl: string, obj:T, additionalHeaders?: ifm.IHeaders): Promise<ITypedResponse<T>> {
+    public async putJson<T>(requestUrl: string, obj: any, additionalHeaders: ifm.IHeaders = {}): Promise<ifm.ITypedResponse<T>> {
         let data: string = JSON.stringify(obj, null, 2);
+        additionalHeaders[Headers.Accept] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.Accept, MediaTypes.ApplicationJson)
+        additionalHeaders[Headers.ContentType] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.ContentType, MediaTypes.ApplicationJson);
         let res: ifm.IHttpClientResponse = await this.put(requestUrl, data, additionalHeaders);
         return this._processResponse<T>(res, this.requestOptions);
     }    
 
-    public async patchJson<T>(requestUrl: string, obj:T, additionalHeaders?: ifm.IHeaders): Promise<ITypedResponse<T>> {
+    public async patchJson<T>(requestUrl: string, obj: any, additionalHeaders: ifm.IHeaders = {}): Promise<ifm.ITypedResponse<T>> {
         let data: string = JSON.stringify(obj, null, 2);
+        additionalHeaders[Headers.Accept] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.Accept, MediaTypes.ApplicationJson)
+        additionalHeaders[Headers.ContentType] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.ContentType, MediaTypes.ApplicationJson);
         let res: ifm.IHttpClientResponse = await this.patch(requestUrl, data, additionalHeaders);
         return this._processResponse<T>(res, this.requestOptions);
     }    
@@ -422,6 +433,16 @@ export class HttpClient {
         return lowercaseKeys(headers || {});
     }
 
+    private _getExistingOrDefaultHeader(additionalHeaders: ifm.IHeaders, header: string, _default: string) {
+        const lowercaseKeys = obj => Object.keys(obj).reduce((c, k) => (c[k.toLowerCase()] = obj[k], c), {});
+
+        let clientHeader: string;
+        if(this.requestOptions && this.requestOptions.headers) {
+            clientHeader =  lowercaseKeys(this.requestOptions.headers)[header];
+        }
+        return additionalHeaders[header] || clientHeader || _default;
+    }
+
     private _getAgent(parsedUrl: url.Url): http.Agent {
         let agent;
         let proxyUrl: url.Url = pm.getProxyUrl(parsedUrl);
@@ -513,11 +534,11 @@ export class HttpClient {
         return value;
     }
 
-    private async _processResponse<T>(res: ifm.IHttpClientResponse, options: ifm.IRequestOptions): Promise<ITypedResponse<T>> {
-        return new Promise<ITypedResponse<T>>(async (resolve, reject) => {
+    private async _processResponse<T>(res: ifm.IHttpClientResponse, options: ifm.IRequestOptions): Promise<ifm.ITypedResponse<T>> {
+        return new Promise<ifm.ITypedResponse<T>>(async (resolve, reject) => {
             const statusCode: number = res.message.statusCode;
 
-            const response: ITypedResponse<T> = {
+            const response: ifm.ITypedResponse<T> = {
                 statusCode: statusCode,
                 result: null,
                 headers: {}

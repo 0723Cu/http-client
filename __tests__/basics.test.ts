@@ -1,4 +1,5 @@
 import * as httpm from '../_out';
+import * as ifm from '../_out/interfaces'
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -8,6 +9,7 @@ interface HttpBinData {
     url: string;
     data: any;
     json: any;
+    headers: any;
     args?: any
 }
 
@@ -201,42 +203,54 @@ describe('basics', () => {
     });
     
     it('gets a json object', async() => {
-        let jsonObj: httpm.ITypedResponse<HttpBinData> = await _http.getJson<HttpBinData>('https://httpbin.org/get');
+        let jsonObj: ifm.ITypedResponse<HttpBinData> = await _http.getJson<HttpBinData>('https://httpbin.org/get');
         expect(jsonObj.statusCode).toBe(200);
         expect(jsonObj.result).toBeDefined();
         expect(jsonObj.result.url).toBe('https://httpbin.org/get');
+        expect(jsonObj.result.headers["Accept"]).toBe(httpm.MediaTypes.ApplicationJson);
+        expect(jsonObj.headers[httpm.Headers.ContentType]).toBe(httpm.MediaTypes.ApplicationJson);
     });
     
     it('getting a non existent json object returns null', async() => {
-        let jsonObj: httpm.ITypedResponse<HttpBinData> = await _http.getJson<HttpBinData>('https://httpbin.org/status/404');
+        let jsonObj: ifm.ITypedResponse<HttpBinData> = await _http.getJson<HttpBinData>('https://httpbin.org/status/404');
         expect(jsonObj.statusCode).toBe(404);
         expect(jsonObj.result).toBeNull();
     });
 
     it('posts a json object', async() => {
         let res: any = { name: 'foo' };
-        let restRes: httpm.ITypedResponse<HttpBinData> = await _http.postJson<HttpBinData>('https://httpbin.org/post', res);
+        let restRes: ifm.ITypedResponse<HttpBinData> = await _http.postJson<HttpBinData>('https://httpbin.org/post', res);
         expect(restRes.statusCode).toBe(200);
         expect(restRes.result).toBeDefined(); 
         expect(restRes.result.url).toBe('https://httpbin.org/post');
         expect(restRes.result.json.name).toBe('foo');
+        expect(restRes.result.headers["Accept"]).toBe(httpm.MediaTypes.ApplicationJson);
+        expect(restRes.result.headers["Content-Type"]).toBe(httpm.MediaTypes.ApplicationJson);
+        expect(restRes.headers[httpm.Headers.ContentType]).toBe(httpm.MediaTypes.ApplicationJson);
     });
 
     it('puts a json object', async() => {
         let res: any = { name: 'foo' };
-        let restRes: httpm.ITypedResponse<HttpBinData> = await _http.putJson<HttpBinData>('https://httpbin.org/put', res);
+        let restRes: ifm.ITypedResponse<HttpBinData> = await _http.putJson<HttpBinData>('https://httpbin.org/put', res);
         expect(restRes.statusCode).toBe(200);
         expect(restRes.result).toBeDefined(); 
         expect(restRes.result.url).toBe('https://httpbin.org/put');
         expect(restRes.result.json.name).toBe('foo');
+
+        expect(restRes.result.headers["Accept"]).toBe(httpm.MediaTypes.ApplicationJson);
+        expect(restRes.result.headers["Content-Type"]).toBe(httpm.MediaTypes.ApplicationJson);
+        expect(restRes.headers[httpm.Headers.ContentType]).toBe(httpm.MediaTypes.ApplicationJson);
     });
     
     it('patch a json object', async() => {
         let res: any = { name: 'foo' };
-        let restRes: httpm.ITypedResponse<HttpBinData> = await _http.patchJson<HttpBinData>('https://httpbin.org/patch', res);
+        let restRes: ifm.ITypedResponse<HttpBinData> = await _http.patchJson<HttpBinData>('https://httpbin.org/patch', res);
         expect(restRes.statusCode).toBe(200);
         expect(restRes.result).toBeDefined(); 
         expect(restRes.result.url).toBe('https://httpbin.org/patch');
         expect(restRes.result.json.name).toBe('foo');
-    });    
-})
+        expect(restRes.result.headers["Accept"]).toBe(httpm.MediaTypes.ApplicationJson);
+        expect(restRes.result.headers["Content-Type"]).toBe(httpm.MediaTypes.ApplicationJson);
+        expect(restRes.headers[httpm.Headers.ContentType]).toBe(httpm.MediaTypes.ApplicationJson);
+    });
+});
